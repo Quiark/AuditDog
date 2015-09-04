@@ -1,0 +1,10 @@
+.ropeproject/
+.*.swp
+.*.un~
+*.pyc
+tools/store.cpickle
+store.cpickle
+html/font-awesome/less/
+html/font-awesome/scss/
+html/less/mixins.less
+html/less/variables.less
