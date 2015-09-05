@@ -37,6 +37,9 @@
 	</form>
 </header>
 
+<div id="flash" class="">
+</div>
+
 <section class="success">
 	<div class="container">
 		<div class="row">
@@ -46,7 +49,8 @@
 			</div>
 		</div>
 		<div class="row">
-			<table id="software" class="table table-bordered ">
+			<p class="note">Click on a column to expand it</p>
+			<table id="software" class="table table-bordered listing">
 			</table>
 		</div>
 	</div>
@@ -64,7 +68,7 @@
 			</div>
 		</div>
 		<div class="row">
-			<table id="claims" class="table table-bordered ">
+			<table id="claims" class="table table-bordered listing">
 			</table>
 		</div>
 	</div>
@@ -76,6 +80,16 @@
 <section class="dark">
 	<div class="container">
 		<div class="row">
+			<div class="panel panel-default">
+				<div class="panel-heading">
+					<h3 class="panel-title">Select Account</h3>
+				</div>
+				<div class="panel-body">
+					<ul id="accounts">
+					</ul>
+				</div>
+			</div>
+
 			<div class="panel panel-default">
 				<div class="panel-heading">
 					<h3 class="panel-title">Add Software Entry</h3>
@@ -115,6 +129,8 @@
 
 	<script src="js/web3.min.js"></script>
 	<script src="js/underscore-min.js"></script>
+	<script src="../build/contracts.js"></script>
+	<script src="../build/deployment.js"></script>
 	<script src="js/audit_dog.js"></script>
 </body>
 </html>

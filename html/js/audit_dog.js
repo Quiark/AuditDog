@@ -1,38 +1,98 @@
+function NoConv() {
+
+}
+
+NoConv.prototype.to_eth = function(x) { return x; }
+NoConv.prototype.from_eth = function(x) { return x; }
+
+function HashConv(type) {
+	this.type_ = type;
+}
+
+HashConv.prototype.to_eth = function(x) {
+	if (this.type_ == 'bytes32') {
+		if (x == '') return null;
+		if (x.startsWith('0x')) return x;
+		return '0x' + x;
+	} else {
+		throw 'Unknown internal type.';
+	}
+}
+
+HashConv.prototype.from_eth = function(x) {
+	if (this.type_ == 'bytes32') {
+		return x.substr(2);
+
+	} else {
+		throw 'Unknown internal type.';
+	}
+}
+
+function StrConv(type) {
+	this.type_ = type;
+}
+
+StrConv.prototype.to_eth = function(x) {
+	return web3.toHex(x);
+}
+
+StrConv.prototype.from_eth = function(x) {
+	return web3.toAscii(x);
+}
+
+function NamingConv(dct) {
+	this.dct = dct;
+}
+
+NamingConv.prototype.to_eth = function(x) { return x; }
+
+NamingConv.prototype.from_eth = function(x) {
+	return this.dct[x] || x;
+}
+
+
+// in absence of a GlobalRegistrar...
+var Authors = {
+	'0x6a5b342ec71def8aac337b82969d9ddd811023c9': 'Quiark http://rplasil.name'
+};
 
 var SwFields = [
 	{id: 'name', desc: 'Package Name', caption: 'SW name'},
 	{id: 'git_repo', desc: 'SCM Repo of source code', caption: 'Git Repo'},
-	{id: 'git_commit', desc: 'git commit or contract address', caption: 'Commit or Address'},
-	{id: 'extra_auth', desc: 'Alternative hash of source code', caption: 'Extra Auth'},
-	{id: 'extra_auth_type', desc: 'Alternative hash type', caption: 'EAuth Type'}
+	{id: 'git_commit', desc: 'git commit or contract address', caption: 'Commit or Address', conv: new HashConv('bytes32')},
+	{id: 'extra_auth', desc: 'Alternative hash of source code', caption: 'Extra Auth', conv: new HashConv('bytes32')},
+	{id: 'extra_auth_type', desc: 'Alternative hash type', caption: 'EAuth Type', conv: new StrConv('bytes32')}
 ];
 
 var ClaimFields = [
-	{id: 'author', desc: 'Address of claim author', noinput: true, caption: 'Author Addr'},
+	{id: 'author', desc: 'Address of claim author', noinput: true, caption: 'Author Addr', conv: new NamingConv(Authors)},
 	{id: 'sw_ix', desc: 'Identifier of SW package', caption: 'SW ID'},
 	{id: 'claim', desc: 'Claim text or URL', caption: 'Claim'},
-	{id: 'claim_hash', desc: 'Hash of claim contents', caption: 'Claim Hash'},
-	{id: 'claim_hash_type', desc: 'Type of hash used for claim contents auth', caption: 'Hash Type'},
-	{id: 'claim_ref_adog', desc: 'AuditDog contract where referenced claim exists', caption: 'Ref DB'},
+	{id: 'claim_hash', desc: 'Hash of claim contents', caption: 'Claim Hash', conv: new HashConv('bytes32')},
+	{id: 'claim_hash_type', desc: 'Type of hash used for claim contents auth', caption: 'Hash Type', conv: new StrConv('bytes32')},
+	{id: 'claim_ref_adog', desc: 'AuditDog contract where referenced claim exists', caption: 'Ref DB', conv: new HashConv('bytes32')},
 	{id: 'claim_ref_ix', desc: 'The ID of referenced claim', caption: 'Ref ID'},
 	{id: 'bl_created', desc: 'Block number when claim was created', noinput: true, caption: 'Created Blck'}
 ];
 
-var GAS_ADD_SW = 2000000;
-var GAS_ADD_CLAIM = 2000000;
 
-var AuditDogInfo = {
-	abi:
-		[{"constant":false,"inputs":[{"name":"name","type":"string"},{"name":"git_repo","type":"string"},{"name":"git_commit","type":"bytes32"},{"name":"extra_auth","type":"bytes32"},{"name":"extra_auth_type","type":"bytes32"},{"name":"claim","type":"string"},{"name":"claim_hash","type":"string"},{"name":"claim_hash_type","type":"string"},{"name":"claim_ref_adog","type":"address"},{"name":"claim_ref_ix","type":"uint256"}],"name":"AddSWAndClaim","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"git_repo","type":"string"}],"name":"SearchByGit","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"m_claims","outputs":[{"name":"author","type":"address"},{"name":"sw_ix","type":"uint256"},{"name":"claim","type":"string"},{"name":"claim_hash","type":"string"},{"name":"claim_hash_type","type":"string"},{"name":"claim_ref_adog","type":"address"},{"name":"claim_ref_ix","type":"uint256"},{"name":"bl_created","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[],"name":"GetClaimCount","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":true,"inputs":[{"name":"","type":"uint256"}],"name":"m_software","outputs":[{"name":"name","type":"string"},{"name":"git_repo","type":"string"},{"name":"git_commit","type":"bytes32"},{"name":"extra_auth","type":"bytes32"},{"name":"extra_auth_type","type":"bytes32"}],"type":"function"},{"constant":false,"inputs":[{"name":"name","type":"string"},{"name":"git_repo","type":"string"},{"name":"git_commit","type":"bytes32"},{"name":"extra_auth","type":"bytes32"},{"name":"extra_auth_type","type":"bytes32"}],"name":"AddSoftware","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[],"name":"GetSoftwareCount","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[{"name":"sw_ix","type":"uint256"},{"name":"claim","type":"string"},{"name":"claim_hash","type":"string"},{"name":"claim_hash_type","type":"string"},{"name":"claim_ref_adog","type":"address"},{"name":"claim_ref_ix","type":"uint256"}],"name":"AddClaim","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"anonymous":false,"inputs":[{"indexed":true,"name":"id","type":"uint256"}],"name":"OnNewSoftware","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"claim_id","type":"uint256"},{"indexed":true,"name":"sw_id","type":"uint256"}],"name":"OnNewClaimForSw","type":"event"}]
-	,
-	code:'6060604052604060405190810160405280600481526020017f73686133000000000000000000000000000000000000000000000000000000008152602001506000600050908051906020019082805482825590600052602060002090601f0160209004810192821561008e579182015b8281111561008d57825182600050559160200191906001019061006f565b5b5090506100b9919061009b565b808211156100b5576000818150600090555060010161009b565b5090565b5050604060405190810160405280600981526020017f676974636f6d6d697400000000000000000000000000000000000000000000008152602001506001600050908051906020019082805482825590600052602060002090601f01602090048101928215610145579182015b82811115610144578251826000505591602001919060010190610126565b5b5090506101709190610152565b8082111561016c5760008181506000905550600101610152565b5090565b5050604060405190810160405280600681526020017f73686132353600000000000000000000000000000000000000000000000000008152602001506002600050908051906020019082805482825590600052602060002090601f016020900481019282156101fc579182015b828111156101fb5782518260005055916020019190600101906101dd565b5b5090506102279190610209565b808211156102235760008181506000905550600101610209565b5090565b5050604060405190810160405280600a81526020017f64656c65746520726566000000000000000000000000000000000000000000008152602001506003600050908051906020019082805482825590600052602060002090601f016020900481019282156102b3579182015b828111156102b2578251826000505591602001919060010190610294565b5b5090506102de91906102c0565b808211156102da57600081815060009055506001016102c0565b5090565b5050604060405190810160405280600b81526020017f64697370757465207265660000000000000000000000000000000000000000008152602001506004600050908051906020019082805482825590600052602060002090601f0160209004810192821561036a579182015b8281111561036957825182600050559160200191906001019061034b565b5b5090506103959190610377565b808211156103915760008181506000905550600101610377565b5090565b5050604060405190810160405280600b81526020017f636f6e6669726d207265660000000000000000000000000000000000000000008152602001506005600050908051906020019082805482825590600052602060002090601f01602090048101928215610421579182015b82811115610420578251826000505591602001919060010190610402565b5b50905061044c919061042e565b80821115610448576000818150600090555060010161042e565b5090565b5050604060405190810160405280600981526020017f616d656e642072656600000000000000000000000000000000000000000000008152602001506006600050908051906020019082805482825590600052602060002090601f016020900481019282156104d8579182015b828111156104d75782518260005055916020019190600101906104b9565b5b50905061050391906104e5565b808211156104ff57600081815060009055506001016104e5565b5090565b5050610ec6806105146000396000f3006060604052361561008a576000357c0100000000000000000000000000000000000000000000000000000000900480631443882a1461008c57806342eab17c14610224578063913d54d51461028a578063bb3d5af2146103da578063c9a43b2b146103fb578063d1ab0457146104c6578063e5393f2514610583578063f1974f06146105a45761008a565b005b61020e6004803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001803590602001803590602001803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001906004018035906020019191908080601f0160208091040260200160405190810160405280939291908181526020018383808284378201915050505050509080359060200180359060200150610e81565b6040518082815260200191505060405180910390f35b6102746004803590602001906004018035906020019191908080601f0160208091040260200160405190810160405280939291908181526020018383808284378201915050505050509050610ebe565b6040518082815260200191505060405180910390f35b61029b6004803590602001506106f8565b604051808973ffffffffffffffffffffffffffffffffffffffff1681526020018881526020018060200180602001806020018773ffffffffffffffffffffffffffffffffffffffff16815260200186815260200185815260200184810384528a818154815260200191508054801561033857820191906000526020600020905b81548152906001019060200180831161031b57829003601f168201915b5050848103835289818154815260200191508054801561037d57820191906000526020600020905b81548152906001019060200180831161036057829003601f168201915b505084810382528881815481526020019150805480156103c257820191906000526020600020905b8154815290600101906020018083116103a557829003601f168201915b50509b50505050505050505050505060405180910390f35b6103e56004506107b0565b6040518082815260200191505060405180910390f35b61040c6004803590602001506106a6565b604051808060200180602001868152602001858152602001848152602001838103835288818154815260200191508054801561046d57820191906000526020600020905b81548152906001019060200180831161045057829003601f168201915b505083810382528781815481526020019150805480156104b257820191906000526020600020905b81548152906001019060200180831161049557829003601f168201915b505097505050505050505060405180910390f35b61056d6004803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001803590602001803590602001506107c2565b6040518082815260200191505060405180910390f35b61058e60045061079e565b6040518082815260200191505060405180910390f35b6106906004803590602001803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001906004018035906020019191908080601f01602080910402602001604051908101604052809392919081815260200183838082843782019150505050505090803590602001906004018035906020019191908080601f0160208091040260200160405190810160405280939291908181526020018383808284378201915050505050509080359060200180359060200150610a64565b6040518082815260200191505060405180910390f35b6007600050818154811015610002579060005260206000209060050201600091509050806000016000509080600101600050908060020160005054908060030160005054908060040160005054905085565b60086000508181548110156100025790600052602060002090600802016000915090508060000160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16908060010160005054908060020160005090806003016000509080600401600050908060050160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16908060060160005054908060070160005054905088565b600060076000505490506107ad565b90565b600060086000505490506107bf565b90565b600060006000600760005054915060016007600050818154019150818154818355818115116108d7576005028160050283600052602060002091820191016108d6919061080a565b808211156108d257600060008201600050805460008255601f01602090049060005260206000209081019061085d919061083f565b80821115610859576000818150600090555060010161083f565b5090565b5060018201600050805460008255601f0160209004906000526020600020908101906108a79190610889565b808211156108a35760008181506000905550600101610889565b5090565b506002820160005060009055600382016000506000905560048201600050600090555060010161080a565b5090565b5b50505050600760005082815481101561000257906000526020600020906005020160005090508781600001600050908051906020019082805482825590600052602060002090601f01602090048101928215610950579182015b8281111561094f578251826000505591602001919060010190610931565b5b50905061097b919061095d565b80821115610977576000818150600090555060010161095d565b5090565b50508681600101600050908051906020019082805482825590600052602060002090601f016020900481019282156109d0579182015b828111156109cf5782518260005055916020019190600101906109b1565b5b5090506109fb91906109dd565b808211156109f757600081815060009055506001016109dd565b5090565b5050858160020160005081905550848160030160005081905550838160040160005081905550817f92fb2fc493a102c962cf806f64149fd941df1c577f7fdeb006ec2752e19eb66d60405180905060405180910390a2819250610a59565b505095945050505050565b60006000600060086000505491506001600860005081815401915081815481835581811511610c1157600802816008028360005260206000209182019101610c109190610aac565b80821115610c0c5760006000820160006101000a81549073ffffffffffffffffffffffffffffffffffffffff0219169055600182016000506000905560028201600050805460008255601f016020900490600052602060002090810190610b319190610b13565b80821115610b2d5760008181506000905550600101610b13565b5090565b5060038201600050805460008255601f016020900490600052602060002090810190610b7b9190610b5d565b80821115610b775760008181506000905550600101610b5d565b5090565b5060048201600050805460008255601f016020900490600052602060002090810190610bc59190610ba7565b80821115610bc15760008181506000905550600101610ba7565b5090565b506005820160006101000a81549073ffffffffffffffffffffffffffffffffffffffff02191690556006820160005060009055600782016000506000905550600101610aac565b5090565b5b5050505060086000508281548110156100025790600052602060002090600802016000509050338160000160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908302179055508881600101600050819055508781600201600050908051906020019082805482825590600052602060002090601f01602090048101928215610cc3579182015b82811115610cc2578251826000505591602001919060010190610ca4565b5b509050610cee9190610cd0565b80821115610cea5760008181506000905550600101610cd0565b5090565b50508681600301600050908051906020019082805482825590600052602060002090601f01602090048101928215610d43579182015b82811115610d42578251826000505591602001919060010190610d24565b5b509050610d6e9190610d50565b80821115610d6a5760008181506000905550600101610d50565b5090565b50508581600401600050908051906020019082805482825590600052602060002090601f01602090048101928215610dc3579182015b82811115610dc2578251826000505591602001919060010190610da4565b5b509050610dee9190610dd0565b80821115610dea5760008181506000905550600101610dd0565b5090565b5050848160050160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908302179055508381600601600050819055504381600701600050819055508060010160005054827fd4e84a8cbb361425ff0404ab684a00c1251df818fb4c3744a16c8db847d8f71a60405180905060405180910390a3819250610e75565b50509695505050505050565b600060006000610e948d8d8d8d8d6107c2565b9150610ea4828989898989610a64565b9050809250610eae565b50509a9950505050505050505050565b60005b91905056',
-	addr: '0x567b6403fb54b571a424167878bca59eb48eeabf'
-};
-AuditDogInfo.cls = web3.eth.contract(AuditDogInfo.abi);
+var GAS_ADD_SW = 500000;
+var GAS_ADD_CLAIM = 600000;
+
 
 var AuditDog = null;
 var Software = [];
 var Claims = [];
+
+function Flash(msg) {
+	var $flash = $('#flash');
+	$flash.text(msg)
+		.addClass('flash-visible');
+
+	setTimeout(function() {
+		$flash.removeClass('flash-visible');
+	}, 5000);
+}
 
 function Tuple2Obj(tuple, fields) {
 	var obj = {};
@@ -56,10 +116,14 @@ function TableHeader($table, fields) {
 	}
 }
 
-function TableRow($row, tuple, ix) {
+function TableRow($row, tuple, ix, fields) {
 	$row.append($('<td/>').text(ix));
 	for (var i = 0; i < tuple.length; i++) {
-		$row.append($('<td/>').text(tuple[i]));
+		var field = fields[i];
+		var conv = field.conv || new NoConv();
+		$row.append($('<td/>')
+				.attr('col', i)
+				.text( conv.from_eth(tuple[i]) ));
 	}
 }
 
@@ -80,7 +144,7 @@ function LoadTable(src, table_id, fields, dest, cnt) {
 					$table.append($row);
 				}
 				$row.empty();
-				TableRow($row, result, ix);
+				TableRow($row, result, ix, fields);
 			}));
 		})(i);
 	}
@@ -90,19 +154,25 @@ function LoadTable(src, table_id, fields, dest, cnt) {
 }
 
 function SubmitForm($form, fields, gas, send_fn) {
-	var data = [];
-	var $grp = $('.form-group', $form);
-	for (var i = 0; i < fields.length; i++) {
-		var field = fields[i];
-		if (field.noinput) continue;
-		var $input = $('#' + field.id);
-		data.push($input.val());
-	}
-	console.log(data);
+	try {
+		var data = [];
+		var $grp = $('.form-group', $form);
+		for (var i = 0; i < fields.length; i++) {
+			var field = fields[i];
+			if (field.noinput) continue;
+			var conv = field.conv || new NoConv();
+			var $input = $('#' + field.id);
+			data.push(conv.to_eth($input.val()));
+		}
+		console.log(data);
 
-	data.push({gas: gas});
-	var tx = send_fn.sendTransaction.apply(null, data);
-	console.log('web3.eth.getTransactionReceipt("'+ tx + '")');
+		data.push({gas: gas});
+		var tx = send_fn.sendTransaction.apply(null, data);
+		console.log('web3.eth.getTransactionReceipt("'+ tx + '")');
+		Flash('Sent! tx=' + tx);
+	} catch (err) {
+		Flash('Error: ' + err);
+	}
 }
 
 function MakeFormRow($parent, caption, id, desc) {
@@ -125,6 +195,24 @@ function MakeForm($parent, fields) {
 	}
 }
 
+function LoadAccounts() {
+	var $drop = $('#accounts');
+	for (var i = 0; i < web3.eth.accounts.length; i++) {
+		var $li = $('<li/>');
+		var $item = $('<a/>')
+			.attr('href', '#accounts')
+			.text(web3.eth.accounts[i]);
+		$item.appendTo($li);
+		$li.appendTo($drop);
+	}
+
+	$drop.on('click', 'a', function(evt) {
+		var $target = $(evt.target);
+		var addr = $target.text();
+		web3.eth.defaultAccount = addr;
+	});
+}
+
 function Reload() {
 	var RpcHost = $('#iRpcHost').val();
 	var RpcPort = $('#iRpcPort').val();
@@ -135,52 +223,33 @@ function Reload() {
 	Software = [];
 	Claims = [];
 
-	if (AuditDogInfo.addr == '') {
-		// deploy
-		var myContractReturned = AuditDogInfo.cls.new({
-			data: AuditDogInfo.code,
-			gas: 3000000,
-			from: web3.eth.accounts[0]}, function(err, myContract){
-				if(!err) {
-					// NOTE: The callback will fire twice!
-					// Once the contract has the transactionHash property set and once its deployed on an address.
-
-					// e.g. check tx hash on the first call (transaction send)
-					if (!myContract.address) {
-						//console.log(myContract.transactionHash) // The hash of the transaction, which deploys the contract
-
-						// check address on the second call (contract deployed)
-					} else {
-						console.log('addr', myContract.address) // the contract address
+	var  addr = web3.eth.getTransactionReceipt(contractDeployment['AuditDog'].tx).contractAddress;
+	AuditDog = contracts['AuditDog'].at(addr);
+	console.log('contract addr', addr);
 
 
-						// create some testing data
-						AuditDog = AuditDogInfo.cls.at(myContract.address);
-						AuditDog.AddSoftware.sendTransaction('git', 'git.linux.org', 'abcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
-						AuditDog.AddSoftware.sendTransaction('hg', 'git.linux.org', 'abcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
-						AuditDog.AddSoftware.sendTransaction('mozilla', 'git.linux.org', 'abcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
-						AuditDog.AddSoftware.sendTransaction('windows', 'git.linux.org', 'abcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
+	if (AuditDog.GetSoftwareCount.call().toFixed() == 0) {
 
-						AuditDog.AddClaim.sendTransaction(0, 'is safe', '', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
-						AuditDog.AddClaim.sendTransaction(1, 'is in Python', '', 'hulla hula', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
-						AuditDog.AddClaim.sendTransaction(1, 'is big', '', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
-						AuditDog.AddClaim.sendTransaction(2, 'I dont know', 'blabla', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
-						AuditDog.AddClaim.sendTransaction(3, 'is a horrible nightmare', '', 'derp', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
-					}
+		// create some testing data
+		AuditDog.AddSoftware.sendTransaction('git', 'git.linux.org', '0xabcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
+		AuditDog.AddSoftware.sendTransaction('hg', 'git.linux.org', '0xabcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
+		AuditDog.AddSoftware.sendTransaction('mozilla', 'git.linux.org', '0xabcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
+		AuditDog.AddSoftware.sendTransaction('windows', 'git.linux.org', '0xabcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
 
-					// Note that the returned "myContractReturned" === "myContract",
-					// so the returned "myContractReturned" object will also get the address set.
-				}
-			});
+		AuditDog.AddClaim.sendTransaction(0, 'is safe', '0xBBBBBABB', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
+		AuditDog.AddClaim.sendTransaction(1, 'is in Python', '', 'hulla hula', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
+		AuditDog.AddClaim.sendTransaction(1, 'is big', '', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
+		AuditDog.AddClaim.sendTransaction(2, 'I dont know', 'blabla', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
+		AuditDog.AddClaim.sendTransaction(3, 'is a horrible nightmare', '', 'derp', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
+
 
 	}
 
 
-	AuditDog = AuditDogInfo.cls.at(AuditDogInfo.addr);
-
-
 	LoadTable(AuditDog.m_software, 'software', SwFields, Software, AuditDog.GetSoftwareCount.call().toFixed());
 	LoadTable(AuditDog.m_claims, 'claims', ClaimFields, Claims, AuditDog.GetClaimCount.call().toFixed());
+
+	LoadAccounts();
 }
 
 
@@ -197,3 +266,15 @@ $('#bSubmitClaim').click(function(evt) {
 
 $('#bReload').click(Reload);
 Reload();
+
+$('table.listing').on('click', 'td', function(evt) {
+	var col = $(evt.target).attr('col');
+	var $table = $(evt.target).closest('table');
+	$('td[col=' + col + ']', $table).toggleClass('unfolded');
+});
+
+/*
+$('table.listing').on('mouseleave', 'td', function(evt) {
+	$('table.listing td').removeClass('unfolded');
+});
+*/
