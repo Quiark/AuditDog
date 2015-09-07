@@ -53,7 +53,8 @@ NamingConv.prototype.from_eth = function(x) {
 
 // in absence of a GlobalRegistrar...
 var Authors = {
-	'0x6a5b342ec71def8aac337b82969d9ddd811023c9': 'Quiark http://rplasil.name'
+	'0x1b3cea9cc8840e158f3beb20f11c16b9514555f1': 'Quiark http://rplasil.name',
+	'0xd8af2b63c5017a5542d6fbbac21f48495c8d3017': 'Quiark http://rplasil.name'
 };
 
 var SwFields = [
@@ -127,7 +128,7 @@ function TableRow($row, tuple, ix, fields) {
 	}
 }
 
-function LoadTable(src, table_id, fields, dest, cnt) {
+function LoadTable(src, table_id, fields, dest, cnt, short_type) {
 	var batch = web3.createBatch();
 	var $table = $('table#' + table_id);
 	TableHeader($table, fields);
@@ -140,7 +141,9 @@ function LoadTable(src, table_id, fields, dest, cnt) {
 
 				var $row = $('tr[ix='+ix+']', $table);
 				if ($row.length == 0) {
-					$row = $('<tr/>').attr('ix', ix);
+					$row = $('<tr/>')
+						.attr('ix', ix)
+						.attr('id', short_type + '-' + ix);
 					$table.append($row);
 				}
 				$row.empty();
@@ -214,6 +217,8 @@ function LoadAccounts() {
 }
 
 function Reload() {
+	var DEV = false;
+
 	var RpcHost = $('#iRpcHost').val();
 	var RpcPort = $('#iRpcPort').val();
 	web3.setProvider(new web3.providers.HttpProvider('http://' + RpcHost + ':' + RpcPort));
@@ -223,12 +228,15 @@ function Reload() {
 	Software = [];
 	Claims = [];
 
-	var  addr = web3.eth.getTransactionReceipt(contractDeployment['AuditDog'].tx).contractAddress;
+	var  addr = '0x710690d588c6782c8af2e06dd1a5748ca6ba02ae';
+	if (DEV) {
+		 addr = web3.eth.getTransactionReceipt(contractDeployment['AuditDog'].tx).contractAddress;
+	}
 	AuditDog = contracts['AuditDog'].at(addr);
 	console.log('contract addr', addr);
 
 
-	if (AuditDog.GetSoftwareCount.call().toFixed() == 0) {
+	if (DEV && (AuditDog.GetSoftwareCount.call().toFixed() == 0)) {
 
 		// create some testing data
 		AuditDog.AddSoftware.sendTransaction('git', 'git.linux.org', '0xabcd', '', '', {from: web3.eth.accounts[0], gas: GAS_ADD_SW});
@@ -241,13 +249,11 @@ function Reload() {
 		AuditDog.AddClaim.sendTransaction(1, 'is big', '', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
 		AuditDog.AddClaim.sendTransaction(2, 'I dont know', 'blabla', '', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
 		AuditDog.AddClaim.sendTransaction(3, 'is a horrible nightmare', '', 'derp', '', 0, {from: web3.eth.accounts[0], gas: GAS_ADD_CLAIM});
-
-
 	}
 
 
-	LoadTable(AuditDog.m_software, 'software', SwFields, Software, AuditDog.GetSoftwareCount.call().toFixed());
-	LoadTable(AuditDog.m_claims, 'claims', ClaimFields, Claims, AuditDog.GetClaimCount.call().toFixed());
+	LoadTable(AuditDog.m_software, 'software', SwFields, Software, AuditDog.GetSoftwareCount.call().toFixed(), 'sw');
+	LoadTable(AuditDog.m_claims, 'claims', ClaimFields, Claims, AuditDog.GetClaimCount.call().toFixed(), 'cl');
 
 	LoadAccounts();
 }
